@@ -11,6 +11,7 @@ require 'formula'
 
 class GnuSmalltalk < Formula
   url 'http://ftpmirror.gnu.org/smalltalk/smalltalk-3.2.2.tar.gz'
+  mirror 'http://ftp.gnu.org/gnu/smalltalk/smalltalk-3.2.2.tar.gz'
   homepage 'http://smalltalk.gnu.org/'
   sha1 'a985d69e4760420614c9dfe4d3605e47c5eb8faa'
 
@@ -19,7 +20,7 @@ class GnuSmalltalk < Formula
 
   depends_on 'readline'
 
-  fails_with_llvm "Codegen problems with LLVM"
+  fails_with_llvm "Codegen problems with LLVM", :build => 2334
 
   def install
     # 64-bit version doesn't build, so force 32 bits.
