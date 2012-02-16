@@ -97,7 +97,7 @@ class Imagemagick < Formula
     ENV.O3 # takes forever otherwise
 
     args = [ "--disable-osx-universal-binary",
-             "--without-perl", # I couldn't make this compile
+             "--with-perl", # I couldn't make this compile
              "--prefix=#{prefix}",
              "--disable-dependency-tracking",
              "--enable-shared",
