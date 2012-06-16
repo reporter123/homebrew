@@ -106,7 +106,7 @@ class Imagemagick < Formula
     ENV.x11 # Add to PATH for freetype-config on Snow Leopard
 
     args = [ "--disable-osx-universal-binary",
-             "--with-perl", # I couldn't make this compile
+             "--with-perl", # I could make this compile
              "--prefix=#{prefix}",
              "--disable-dependency-tracking",
              "--enable-shared",
