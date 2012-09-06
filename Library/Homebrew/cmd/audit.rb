@@ -1,6 +1,6 @@
 require 'formula'
 require 'utils'
-require 'extend/ENV'
+require 'superenv'
 
 module Homebrew extend self
   def audit
@@ -8,7 +8,7 @@ module Homebrew extend self
     problem_count = 0
 
     ff = if ARGV.named.empty?
-      Formula.all
+      Formula
     else
       ARGV.formulae
     end
@@ -88,6 +88,7 @@ class FormulaAuditor
     pkg-config
     scons
     smake
+    swig
   ]
 
   def initialize f
@@ -122,7 +123,7 @@ class FormulaAuditor
 
     # Don't depend_on aliases; use full name
     aliases = Formula.aliases
-    f.deps.select {|d| aliases.include? d}.each do |d|
+    f.deps.select { |d| aliases.include? d.name }.each do |d|
       problem "Dependency #{d} is an alias; use the canonical name."
     end
 
@@ -217,9 +218,9 @@ class FormulaAuditor
       if s.version.to_s.empty?
         problem "Invalid or missing #{spec} version"
       else
-        version_text = s.version if s.explicit_version?
-        version_url = Pathname.new(s.url).version
-        if version_url == version_text
+        version_text = s.version unless s.version.detected_from_url?
+        version_url = Version.parse(s.url)
+        if version_url.to_s == version_text.to_s
           problem "#{spec} version #{version_text} is redundant with version scanned from URL"
         end
       end
@@ -233,6 +234,8 @@ class FormulaAuditor
         when :sha256 then 64
         end
 
+      problem "md5 is broken, deprecated: use sha1 instead" if cksum.hash_type == :md5
+
       if cksum.empty?
         problem "#{cksum.hash_type} is empty"
       else
@@ -245,7 +248,6 @@ class FormulaAuditor
 
   def audit_patches
     # Some formulae use ENV in patches, so set up an environment
-    ENV.extend(HomebrewEnvExtension)
     ENV.setup_build_environment
 
     Patches.new(f.patches).select { |p| p.external? }.each do |p|
@@ -274,9 +276,10 @@ class FormulaAuditor
     end
 
     # build tools should be flagged properly
+    # but don't complain about automake; it needs autoconf at runtime
     if text =~ /depends_on ['"](#{BUILD_TIME_DEPS*'|'})['"]$/
       problem "#{$1} dependency should be \"depends_on '#{$1}' => :build\""
-    end
+    end unless f.name == "automake"
 
     # FileUtils is included in Formula
     if text =~ /FileUtils\.(\w+)/
@@ -351,9 +354,8 @@ class FormulaAuditor
       problem "xcodebuild should be passed an explicit \"SYMROOT\""
     end
 
-    # using ARGV.flag? for formula options is generally a bad thing
-    if text =~ /ARGV\.flag\?/
-      problem "Use 'ARGV.include?' instead of 'ARGV.flag?'"
+    if text =~ /ENV\.x11/
+      problem "Use \"depends_on :x11\" instead of \"ENV.x11\""
     end
 
     # Avoid hard-coding compilers
@@ -370,7 +372,23 @@ class FormulaAuditor
     end
 
     if text =~ /version == ['"]HEAD['"]/
-      problem "Use 'ARGV.build_head?' instead of inspecting 'version'"
+      problem "Use 'build.head?' instead of inspecting 'version'"
+    end
+
+    if text =~ /build\.include\?\s+['"]\-\-(.*)['"]/
+      problem "Reference '#{$1}' without dashes."
+    end
+
+    if text =~ /ARGV\.(?!(debug|verbose)\?)/
+      problem "Use build instead of ARGV to check options."
+    end
+
+    if text =~ /def options/
+      problem "Use new-style option definitions."
+    end
+
+    if text =~ /MACOS_VERSION/
+      problem "Use MacOS.version instead of MACOS_VERSION"
     end
   end
 
