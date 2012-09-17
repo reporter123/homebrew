@@ -34,11 +34,15 @@ class Imagemagick < Formula
   option 'with-quantum-depth-8', 'Compile with a quantum depth of 8 bit'
   option 'with-quantum-depth-16', 'Compile with a quantum depth of 16 bit'
   option 'with-quantum-depth-32', 'Compile with a quantum depth of 32 bit'
+  option 'with-x', 'Compile with x11'
+  option 'with-freetype', 'Compile with freetype'
 
   depends_on 'pkg-config' => :build
 
   depends_on 'jpeg' => :recommended
   depends_on :libpng
+  depends_on :x11 if build.include? 'with-x'
+  depends_on :freetype if build.include? 'with-freetype'
 
   depends_on 'ghostscript' => :optional if ghostscript_srsly?
 
@@ -57,9 +61,7 @@ class Imagemagick < Formula
     sha1 '019400feda06e4f277187702a4baeacdfdbf4851' => :snowleopard
   end
 
-  def skip_clean? path
-    path.extname == '.la'
-  end
+  skip_clean :la
 
   def patches
     # Fixes xml2-config that can be missing --prefix.  See issue #11789
@@ -96,6 +98,8 @@ class Imagemagick < Formula
 
     args << "--with-quantum-depth=#{quantum_depth}" if quantum_depth
     args << "--with-rsvg" if build.include? 'use-rsvg'
+    args << "--without-x" unless build.include? 'with-x'
+    args << "--with-freetype=yes" if build.include? 'with-freetype'
 
     # versioned stuff in main tree is pointless for us
     inreplace 'configure', '${PACKAGE_NAME}-${PACKAGE_VERSION}', '${PACKAGE_NAME}'
