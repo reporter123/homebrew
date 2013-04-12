@@ -2,8 +2,8 @@ require 'formula'
 
 class Tmux < Formula
   homepage 'http://tmux.sourceforge.net'
-  url 'http://sourceforge.net/projects/tmux/files/tmux/tmux-1.6/tmux-1.6.tar.gz'
-  sha1 '8756f6bcecb18102b87e5d6f5952ba2541f68ed3'
+  url 'http://sourceforge.net/projects/tmux/files/tmux/tmux-1.8/tmux-1.8.tar.gz'
+  sha1 '08677ea914e1973ce605b0008919717184cbd033'
 
   head 'git://tmux.git.sourceforge.net/gitroot/tmux/tmux'
 
@@ -16,16 +16,9 @@ class Tmux < Formula
   end
 
   def patches
-    # Fix for Japanese characters. See:
-    #   http://sourceforge.net/tracker/?func=detail&aid=3566884&group_id=200378&atid=973264
-    p = ['http://sourceforge.net/tracker/download.php?group_id=200378&atid=973264&file_id=453002&aid=3566884']
-    # This patch adds the implementation of osdep_get_cwd for Darwin platform,
-    # so that tmux can get current working directory correctly under Mac OS.
-    # NOTE: it applies to 1.6 only, and should be removed when 1.7 is out.
-    #       (because it has been merged upstream)
-    p << DATA if build.stable?
-
-    p
+    # Fixes installation failure on Snow Leopard
+    # http://sourceforge.net/mailarchive/forum.php?thread_name=CAJfQvvc2QDU%3DtXWb-sc-NK0J8cgnDRMDod6CNKO1uYqu%3DY5CXg%40mail.gmail.com&forum_name=tmux-users
+    DATA
   end
 
   def install
@@ -33,19 +26,11 @@ class Tmux < Formula
 
     ENV.append "LDFLAGS", '-lresolv'
     system "./configure", "--disable-dependency-tracking",
-                          "--prefix=#{prefix}", "--sysconfdir=#{etc}"
+                          "--prefix=#{prefix}",
+                          "--sysconfdir=#{etc}"
     system "make install"
 
     (prefix+'etc/bash_completion.d').install "examples/bash_completion_tmux.sh" => 'tmux'
-
-    # Install addtional meta file
-    prefix.install 'NOTES'
-  end
-
-  def caveats; <<-EOS.undent
-    Additional information can be found in:
-      #{prefix}/NOTES
-    EOS
   end
 
   def test
@@ -55,29 +40,27 @@ end
 
 __END__
 diff --git a/osdep-darwin.c b/osdep-darwin.c
-index c5820df..7b15446 100644
+index 23de9d5..b5efe84 100644
 --- a/osdep-darwin.c
 +++ b/osdep-darwin.c
-@@ -18,6 +18,7 @@
-
- #include <sys/types.h>
- #include <sys/sysctl.h>
-+#include <libproc.h>
-
- #include <event.h>
- #include <stdlib.h>
-@@ -52,6 +53,15 @@
+@@ -33,17 +33,17 @@ struct event_base	*osdep_event_init(void);
  char *
- osdep_get_cwd(pid_t pid)
+ osdep_get_name(int fd, unused char *tty)
  {
-+	static char wd[PATH_MAX];
-+	struct proc_vnodepathinfo pathinfo;
-+	int ret;
-+
-+	ret = proc_pidinfo(pid, PROC_PIDVNODEPATHINFO, 0, &pathinfo, sizeof(pathinfo));
-+	if (ret == sizeof(pathinfo)) {
-+		strlcpy(wd, pathinfo.pvi_cdir.vip_path, sizeof(wd));
-+		return (wd);
-+	}
- 	return (NULL);
+-	struct proc_bsdshortinfo	bsdinfo;
++	struct proc_bsdinfo bsdinfo;
+	pid_t				pgrp;
+	int				ret;
+
+	if ((pgrp = tcgetpgrp(fd)) == -1)
+		return (NULL);
+
+-	ret = proc_pidinfo(pgrp, PROC_PIDT_SHORTBSDINFO, 0,
++	ret = proc_pidinfo(pgrp, PROC_PIDTBSDINFO, 0,
+	    &bsdinfo, sizeof bsdinfo);
+-	if (ret == sizeof bsdinfo && *bsdinfo.pbsi_comm != '\0')
+-		return (strdup(bsdinfo.pbsi_comm));
++	if (ret == sizeof bsdinfo && *bsdinfo.pbi_comm != '\0')
++		return (strdup(bsdinfo.pbi_comm));
+	return (NULL);
  }

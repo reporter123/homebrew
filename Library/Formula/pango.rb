@@ -2,20 +2,20 @@ require 'formula'
 
 class Pango < Formula
   homepage 'http://www.pango.org/'
-  url 'http://ftp.gnome.org/pub/GNOME/sources/pango/1.30/pango-1.30.1.tar.xz'
-  sha256 '3a8c061e143c272ddcd5467b3567e970cfbb64d1d1600a8f8e62435556220cbe'
+  url 'http://ftp.gnome.org/pub/GNOME/sources/pango/1.34/pango-1.34.0.tar.xz'
+  sha256 '105da1efe019018a9de81681d88c9ace83d2111509ab625c4be9d124a1fdce27'
 
   option 'without-x', 'Build without X11 support'
 
   depends_on 'pkg-config' => :build
   depends_on 'xz' => :build
   depends_on 'glib'
-  depends_on :x11 unless build.include? 'without-x'
+  depends_on 'harfbuzz'
 
-  if MacOS.version == :leopard
+  unless build.include? 'without-x'
+    depends_on :x11
+    # Needs fontconfig 2.10.91, which is newer than what XQuartz provides
     depends_on 'fontconfig'
-  else
-    depends_on :fontconfig
   end
 
   # The Cairo library shipped with Lion contains a flaw that causes Graphviz
@@ -38,7 +38,11 @@ class Pango < Formula
       --disable-introspection
     ]
 
-    args << '--with-x' unless build.include? 'without-x'
+    if build.include? 'without-x'
+      args << '--without-xft'
+    else
+      args << '--with-xft'
+    end
 
     system "./configure", *args
     system "make"
@@ -46,11 +50,6 @@ class Pango < Formula
   end
 
   def test
-    mktemp do
-      system "#{bin}/pango-view", "-t", "test-image",
-                                  "--waterfall", "--rotate=10",
-                                  "--annotate=1", "--header",
-                                  "-q", "-o", "output.png"
-    end
+    system "#{bin}/pango-querymodules", "--version"
   end
 end

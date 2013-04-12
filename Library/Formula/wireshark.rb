@@ -2,11 +2,12 @@ require 'formula'
 
 class Wireshark < Formula
   homepage 'http://www.wireshark.org'
-  url 'http://wiresharkdownloads.riverbed.com/wireshark/src/all-versions/wireshark-1.8.2.tar.bz2'
-  sha1 '4737d9745dbf002444ea42615243abf3bb80b943'
+  url 'http://www.wireshark.org/download/src/wireshark-1.8.6.tar.bz2'
+  sha1 '0f51ed901b5e07cceb1373f3368f739be8f1e827'
 
   depends_on 'pkg-config' => :build
-  depends_on 'gnutls' => :optional
+  depends_on 'gnutls2' => :optional
+  depends_on 'libgcrypt' => :optional
   depends_on 'c-ares' => :optional
   depends_on 'pcre' => :optional
   depends_on 'glib'

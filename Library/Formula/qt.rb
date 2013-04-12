@@ -1,20 +1,18 @@
 require 'formula'
 
 class Qt < Formula
-  homepage 'http://qt.nokia.com/'
-  url 'http://releases.qt-project.org/qt4/source/qt-everywhere-opensource-src-4.8.2.tar.gz'
-  sha1 'e1e2edef1d63ed677d6534d32800c2e1f7ad0e73'
+  homepage 'http://qt-project.org/'
+  url 'http://releases.qt-project.org/qt4/source/qt-everywhere-opensource-src-4.8.4.tar.gz'
+  sha1 'f5880f11c139d7d8d01ecb8d874535f7d9553198'
 
   bottle do
-    version 1
-    sha1 'dfa0daa951e889a2548b1cff66759b449b5a6b98' => :mountainlion
-    sha1 '0905eb8b2c5a9bae0d1f9a8234173daba680c48c' => :lion
-    sha1 'c37ac19d54c4684d8996a0ee96cdf971bd2c1f7b' => :snowleopard
+    revision 1
+    sha1 '7fb679119b8b463055849dea791cc7fca62c62d1' => :mountain_lion
+    sha1 'b456ff5f8d18fc53b4546119d00d8ff0dda92f90' => :lion
+    sha1 '920992e5059a5c816b4eb245597fc028ff6b09ae' => :snow_leopard
   end
 
   head 'git://gitorious.org/qt/qt.git', :branch => 'master'
-
-  env :std # Otherwise fails on SSE intrinsics
 
   option :universal
   option 'with-qtdbus', 'Enable QtDBus module'
@@ -23,56 +21,65 @@ class Qt < Formula
   option 'with-debug-and-release', 'Compile Qt in debug and release mode'
   option 'developer', 'Compile and link Qt with developer options'
 
-  depends_on "d-bus" if build.include? 'with-qtdbus'
+  depends_on :libpng
+
+  depends_on "d-bus" if build.with? 'qtdbus'
+  depends_on "mysql" => :optional
   depends_on 'sqlite' if MacOS.version == :leopard
 
-  fails_with :clang do
-    build 421
-  end
-
   def patches
-    # fixes conflict on osx 10.5. See qt bug:
+    # Fixes compilation failure on Leopard.
     # https://bugreports.qt-project.org/browse/QTBUG-23258
     if MacOS.version == :leopard
       "http://bugreports.qt-project.org/secure/attachment/26712/Patch-Qt-4.8-for-10.5"
-    # add support for Mountain Lion
-    # should be unneeded for 4.8.3
-    elsif MacOS.version >= :mountain_lion
-      [ "https://qt.gitorious.org/qt/qt/commit/422f1b?format=patch",
-        "https://qt.gitorious.org/qt/qt/commit/665355?format=patch",
-        "https://raw.github.com/gist/3187034/893252db0ae3bb9bb5fa3ff7c530c7978399b101/0001-Fix-WebKit-on-OS-X-Mountain-Lion.patch" ]
     end
-
   end
 
   def install
-    # Apply binary git patch; normal patch ignores this.
-    # TODO: Autodetect binary patches and apply them correctly.
-    system "git apply --exclude=*/QtWebKit.pro 002-homebrew.diff" if MacOS.version >= :mountain_lion
-
     ENV.append "CXXFLAGS", "-fvisibility=hidden"
+
+    # clang complains about extra qualifier since Xcode 4.6 (clang build 425)
+    # https://bugreports.qt-project.org/browse/QTBUG-29373
+    if MacOS.clang_build_version >= 425
+      inreplace "src/gui/kernel/qt_cocoa_helpers_mac_p.h",
+                "::TabletProximityRec",
+                "TabletProximityRec"
+    end
+
     args = ["-prefix", prefix,
-            "-system-zlib",
+            "-system-libpng", "-system-zlib",
             "-confirm-license", "-opensource",
             "-cocoa", "-fast" ]
+
+    # we have to disable all tjos to avoid triggering optimization code
+    # that will fail with clang. Only seems to occur in superenv, perhaps
+    # because we rename clang to cc and Qt thinks it can build with special
+    # assembler commands. In --env=std, Qt seems aware of this.)
+    # But we want superenv, because it allows to build Qt in non-standard
+    # locations and with Xcode-only.
+    args << "-no-3dnow" if superenv?
+
+    args << "-L#{MacOS::X11.prefix}/lib" << "-I#{MacOS::X11.prefix}/include" if MacOS::X11.installed?
+
+    args << "-platform" << "unsupported/macx-clang" if ENV.compiler == :clang
 
     # See: https://github.com/mxcl/homebrew/issues/issue/744
     args << "-system-sqlite" if MacOS.version == :leopard
 
-    args << "-plugin-sql-mysql" if (HOMEBREW_CELLAR+"mysql").directory?
+    args << "-plugin-sql-mysql" if build.with? 'mysql'
 
-    if build.include? 'with-qtdbus'
+    if build.with? 'qtdbus'
       args << "-I#{Formula.factory('d-bus').lib}/dbus-1.0/include"
       args << "-I#{Formula.factory('d-bus').include}/dbus-1.0"
     end
 
-    if build.include? 'with-qt3support'
+    if build.with? 'qt3support'
       args << "-qt3support"
     else
       args << "-no-qt3support"
     end
 
-    unless build.include? 'with-demos-examples'
+    unless build.with? 'demos-examples'
       args << "-nomake" << "demos" << "-nomake" << "examples"
     end
 
@@ -84,7 +91,7 @@ class Qt < Formula
       args << '-arch' << 'x86'
     end
 
-    if build.include? 'with-debug-and-release'
+    if build.with? 'debug-and-release'
       args << "-debug-and-release"
       # Debug symbols need to find the source so build in the prefix
       mv "../qt-everywhere-opensource-src-#{version}", "#{prefix}/src"
@@ -94,9 +101,6 @@ class Qt < Formula
     end
 
     args << '-developer-build' if build.include? 'developer'
-
-    # Needed for Qt 4.8.1 due to attempting to link moc with gcc.
-    ENV['LD'] = ENV.cxx
 
     system "./configure", *args
     system "make"
@@ -132,8 +136,8 @@ class Qt < Formula
     end
   end
 
-  def test
-    system "#{bin}/qmake", "--version"
+  test do
+    system "#{bin}/qmake", '-project'
   end
 
   def caveats; <<-EOS.undent

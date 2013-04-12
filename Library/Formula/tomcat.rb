@@ -2,10 +2,11 @@ require 'formula'
 
 class Tomcat < Formula
   homepage 'http://tomcat.apache.org/'
-  url 'http://www.apache.org/dyn/closer.cgi?path=tomcat/tomcat-7/v7.0.29/bin/apache-tomcat-7.0.29.tar.gz'
-  sha1 'f27061da957751d6feb58acb16ded680823203d4'
+  url 'http://www.apache.org/dyn/closer.cgi?path=tomcat/tomcat-7/v7.0.39/bin/apache-tomcat-7.0.39.tar.gz'
+  sha1 'a4dbca1ffa8f67cf9c985426ee019973638f4666'
 
-  skip_clean :all
+  # Keep log folders
+  skip_clean 'libexec'
 
   def install
     # Remove Windows scripts

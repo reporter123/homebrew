@@ -2,18 +2,13 @@ require 'formula'
 
 class Liblastfm < Formula
   homepage 'https://github.com/mxcl/liblastfm/'
-  url 'https://github.com/mxcl/liblastfm/tarball/0.3.3'
-  sha1 'f2e9705c9c2cbeaa14f46da9bd35ab36fe710392'
+  url 'https://github.com/mxcl/liblastfm/archive/e380c7f03f4b2417db87372df733606f4a153c53.tar.gz'
+  version '0.3.3.1'
+  sha1 '68c0d23364afd7e6bb5dbd9b71419d808fe0d005'
 
   depends_on 'qt'
   depends_on 'fftw'
   depends_on 'libsamplerate'
-
-  # See issue #12886.  Reported in: https://github.com/mxcl/liblastfm/issues/14
-  fails_with :clang do
-    build 318
-    cause 'error: reference to non-static member function must be called'
-  end
 
   def install
     system "./configure", "--release", "--prefix", prefix

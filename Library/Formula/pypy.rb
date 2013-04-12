@@ -1,22 +1,23 @@
 require 'formula'
 
 class Distribute < Formula
-  url 'http://pypi.python.org/packages/source/d/distribute/distribute-0.6.28.tar.gz'
-  sha1 '709bd97d46050d69865d4b588c7707768dfe6711'
+  url 'http://pypi.python.org/packages/source/d/distribute/distribute-0.6.30.tar.gz'
+  sha1 '40dfce237883d1c02817f726128f61614dc686ff'
 end
 
 class Pypy < Formula
   homepage 'http://pypy.org/'
+  url 'https://bitbucket.org/pypy/pypy/downloads/pypy-1.9-osx64.tar.bz2'
+  version '1.9'
+  sha1 '825e15724419fbdb6fe215eeea044f9181883c90'
 
-  if MacOS.prefer_64_bit?
-    url 'https://bitbucket.org/pypy/pypy/downloads/pypy-1.9-osx64.tar.bz2'
-    version '1.9'
-    sha1 '825e15724419fbdb6fe215eeea044f9181883c90'
-  else
-    url 'http://pypy.org/download/pypy-1.4.1-osx.tar.bz2'
-    version '1.4.1'
-    sha1 '961470e7510c47b8f56e6cc6da180605ba058cb6'
+  devel do
+    url 'https://bitbucket.org/pypy/pypy/downloads/pypy-2.0-beta2-osx64.tar.bz2'
+    version '2.0-beta2'
+    sha1 'ec3d80d7806b0689d9da70ca27c741b1d9cea250'
   end
+
+  depends_on :arch => :x86_64
 
   def install
     rmtree 'site-packages'
@@ -54,8 +55,7 @@ class Pypy < Formula
     end
   end
 
-  def caveats
-    message = <<-EOS.undent
+  def caveats; <<-EOS.undent
     A "distutils.cfg" has been written to:
       #{distutils}
     specifing the install-scripts folder as:
@@ -72,15 +72,6 @@ class Pypy < Formula
 
     See: https://github.com/mxcl/homebrew/wiki/Homebrew-and-Python
     EOS
-
-    unless MacOS.prefer_64_bit?
-      message += "\n" + <<-EOS.undent
-      Outdated PyPy 1.4.1 is the last version with official 32-bit Mac binary.
-      Consider to build modern version yourself: http://pypy.org/download.html#building-from-source
-      EOS
-    end
-
-    return message
   end
 
   # The HOMEBREW_PREFIX location of site-packages
@@ -95,10 +86,6 @@ class Pypy < Formula
 
   # The Cellar location of distutils
   def distutils
-    if MacOS.prefer_64_bit?
-      prefix+"lib-python/2.7/distutils"
-    else
-      prefix+"lib-python/modified-2.5.2/distutils"
-    end
+    prefix+"lib-python/2.7/distutils"
   end
 end

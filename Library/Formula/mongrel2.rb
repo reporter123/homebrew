@@ -1,10 +1,11 @@
 require 'formula'
 
 class Mongrel2 < Formula
-  url 'http://mongrel2.org/static/downloads/mongrel2-1.7.5.tar.bz2'
-  head 'https://github.com/zedshaw/mongrel2.git'
   homepage 'http://mongrel2.org/'
-  sha1 '456561fe04f1c0ee4a996cfc9deadab8c57ee6dc'
+  url 'https://github.com/zedshaw/mongrel2/archive/v1.8.0.tar.gz'
+  sha1 '3c6e57caec19df92ff6af28301d70af05ec3e456'
+
+  head 'https://github.com/zedshaw/mongrel2.git'
 
   depends_on 'zeromq'
 

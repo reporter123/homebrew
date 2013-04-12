@@ -7,9 +7,9 @@ class Libgtop < Formula
 
   depends_on 'xz' => :build
   depends_on 'pkg-config' => :build
+  depends_on 'intltool' => :build
   depends_on 'gettext'
   depends_on 'glib'
-  depends_on 'intltool'
 
   # Patch per MacPorts:
   # https://trac.macports.org/ticket/21165
@@ -17,7 +17,8 @@ class Libgtop < Formula
 
   def install
     system "./configure", "--disable-debug", "--disable-dependency-tracking",
-                          "--prefix=#{prefix}"
+                          "--prefix=#{prefix}",
+                          "--without-x"
     system "make install"
   end
 end
